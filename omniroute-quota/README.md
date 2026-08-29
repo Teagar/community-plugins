@@ -1,8 +1,8 @@
 # OmniRoute Quota
 
-Monitor every Codex account configured in a local OmniRoute installation from
-the Noctalia bar. The panel shows the live 5-hour and weekly quota windows,
-their reset countdowns, account status, and local seven-day usage.
+Monitor Codex accounts configured in a local OmniRoute installation and the
+active Codex login from OpenCode. The panel shows the live 5-hour and weekly
+quota windows, their reset countdowns, account status, and local usage.
 
 ## Plugin
 
@@ -15,8 +15,9 @@ their reset countdowns, account status, and local seven-day usage.
 
 - Install `node` 22.5 or newer on `PATH`, with the built-in `node:sqlite`
   module available.
-- Install and configure OmniRoute locally with at least one Codex account. The
-  collector reads `~/.omniroute/storage.sqlite` and OmniRoute's local `.env`.
+- Install and configure OmniRoute locally with at least one Codex account, or
+  sign in to Codex through OpenCode. The collector reads OmniRoute's local
+  database and `.env`, plus `~/.local/share/opencode/auth.json` when present.
 
 ## Usage
 
@@ -63,6 +64,8 @@ noctalia msg plugin teagar/omniroute-quota:service all refresh
   additional collectors.
 - The collector opens OmniRoute's SQLite database in read-only mode and reads
   `STORAGE_ENCRYPTION_KEY` from OmniRoute's local `.env` only when needed.
+- The direct OpenCode login is deduplicated against OmniRoute connections by
+  ChatGPT account ID.
 - Access tokens are decrypted only in the collector process memory. They are
   never published to Luau state, printed, written, or exposed in the UI.
 - Each active account causes one HTTPS request to OpenAI's official Codex usage

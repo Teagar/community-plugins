@@ -51,6 +51,31 @@ function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {}
 }
 
+function decodeJwtPayload(token) {
+  if (typeof token !== "string") return {}
+  const parts = token.split(".")
+  if (parts.length < 2) return {}
+  try {
+    return asObject(JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8")))
+  } catch {
+    return {}
+  }
+}
+
+export function parseOpenCodeCredential(value) {
+  const credential = asObject(value)
+  if (credential.type !== "oauth" || typeof credential.access !== "string") return null
+  const payload = decodeJwtPayload(credential.access)
+  const auth = asObject(payload["https://api.openai.com/auth"])
+  const profile = asObject(payload["https://api.openai.com/profile"])
+  return {
+    accessToken: credential.access,
+    accountId: credential.accountId || auth.chatgpt_account_id || "",
+    email: profile.email || "",
+    plan: auth.chatgpt_plan_type || null,
+  }
+}
+
 function number(value, fallback = 0) {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
@@ -101,6 +126,16 @@ function readConfiguration(home) {
   return {
     databasePath: path.join(dataDir, "storage.sqlite"),
     encryptionKey: process.env.STORAGE_ENCRYPTION_KEY || env.STORAGE_ENCRYPTION_KEY || "",
+    openCodeAuthPath: process.env.OPENCODE_AUTH_PATH || path.join(home, ".local", "share", "opencode", "auth.json"),
+  }
+}
+
+function readOpenCodeCredential(authPath) {
+  if (!fs.existsSync(authPath)) return null
+  try {
+    return parseOpenCodeCredential(JSON.parse(fs.readFileSync(authPath, "utf8")).openai)
+  } catch {
+    return null
   }
 }
 
@@ -186,19 +221,72 @@ async function fetchAccount(row, encryptionKey, db) {
   }
 }
 
+async function fetchOpenCodeAccount(credential) {
+  const base = {
+    id: `opencode:${credential.accountId || "openai"}`,
+    name: credential.email || "OpenCode account",
+    active: true,
+    localUsage: {
+      today: { requests: 0, inputTokens: 0, outputTokens: 0, cacheTokens: 0 },
+      week: { requests: 0, inputTokens: 0, outputTokens: 0, cacheTokens: 0 },
+    },
+  }
+  try {
+    const headers = {
+      Authorization: `Bearer ${credential.accessToken}`,
+      Accept: "application/json",
+    }
+    if (credential.accountId) headers["chatgpt-account-id"] = credential.accountId
+    const response = await fetch(USAGE_URL, {
+      headers,
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!response.ok) throw new Error(`Quota API returned HTTP ${response.status}`)
+    const payload = await response.json()
+    return {
+      ...base,
+      name: payload.email || base.name,
+      ...parseUsageResponse(payload),
+      error: null,
+    }
+  } catch (error) {
+    return {
+      ...base,
+      plan: credential.plan,
+      limitReached: false,
+      windows: [],
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
 export async function collect(options = {}) {
   const home = options.home || os.homedir()
   const config = readConfiguration(home)
-  if (!fs.existsSync(config.databasePath)) {
-    throw new Error(`OmniRoute database not found: ${config.databasePath}`)
+  const openCode = readOpenCodeCredential(config.openCodeAuthPath)
+  const hasDatabase = fs.existsSync(config.databasePath)
+  if (!hasDatabase && !openCode) {
+    throw new Error(`No OmniRoute database or OpenCode Codex login found`)
   }
 
-  const db = new DatabaseSync(config.databasePath, { readOnly: true })
+  const db = hasDatabase ? new DatabaseSync(config.databasePath, { readOnly: true }) : null
   try {
-    const rows = accountRows(db, Boolean(options.showInactive))
+    const rows = db ? accountRows(db, Boolean(options.showInactive)) : []
     const accounts = []
     for (const row of rows) {
       accounts.push(await fetchAccount(row, config.encryptionKey, db))
+    }
+
+    const omniRouteAccountIds = new Set(rows.map((row) => {
+      try {
+        const data = JSON.parse(row.provider_specific_data || "{}")
+        return data.workspaceId || data.chatgptAccountId || data.chatgpt_account_id || ""
+      } catch {
+        return ""
+      }
+    }))
+    if (openCode?.accountId && !omniRouteAccountIds.has(openCode.accountId)) {
+      accounts.push(await fetchOpenCodeAccount(openCode))
     }
 
     const remaining = accounts.flatMap((account) =>
@@ -215,7 +303,7 @@ export async function collect(options = {}) {
       },
     }
   } finally {
-    db.close()
+    db?.close()
   }
 }
 

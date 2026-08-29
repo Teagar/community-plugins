@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { parseUsageResponse } from "../scripts/get-omniroute-quota.mjs"
+import { parseOpenCodeCredential, parseUsageResponse } from "../scripts/get-omniroute-quota.mjs"
 
 test("normalizes Codex 5-hour and weekly windows", () => {
   const result = parseUsageResponse({
@@ -30,4 +30,22 @@ test("clamps malformed percentages", () => {
   })
 
   assert.deepEqual(result.windows.map((window) => window.remainingPercent), [0, 100])
+})
+
+test("reads OpenCode account metadata without exposing token claims", () => {
+  const payload = Buffer.from(JSON.stringify({
+    "https://api.openai.com/auth": {
+      chatgpt_account_id: "account-1",
+      chatgpt_plan_type: "plus",
+    },
+    "https://api.openai.com/profile": { email: "codex@example.com" },
+  })).toString("base64url")
+  const result = parseOpenCodeCredential({
+    type: "oauth",
+    access: `header.${payload}.signature`,
+  })
+
+  assert.equal(result.accountId, "account-1")
+  assert.equal(result.email, "codex@example.com")
+  assert.equal(result.plan, "plus")
 })
