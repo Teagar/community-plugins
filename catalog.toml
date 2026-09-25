@@ -3034,3 +3034,16 @@ icon = "mouse-2"
 description = "Razer device monitor, battery level indicator, and lighting controller via OpenRazer."
 plugin_api = 9
 tags = ["hardware", "gaming", "theming", "system", "bar", "panel", "service"]
+
+[[plugin]]
+id = "notoxus/media-island"
+name = "Media Island"
+version = "1.0.0"
+updated_at = 1790341770
+added_at = 1790341770
+author = "notoxus"
+license = "MIT"
+icon = "music"
+description = "Top-center now-playing island with artwork, transport controls, and automatic track-change previews."
+plugin_api = 24
+tags = ["bar", "media", "panel", "service"]
