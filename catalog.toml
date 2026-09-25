@@ -3060,3 +3060,17 @@ icon = "moon-stars"
 description = "Vietnamese lunar calendar with lunar dates, Can Chi and traditional festivals."
 plugin_api = 22
 tags = ["panel", "shortcut", "bar", "time", "utility"]
+
+[[plugin]]
+id = "teagar/niri-workspace-preview"
+name = "Niri Workspace Preview"
+version = "1.0.0"
+updated_at = 1790342081
+added_at = 1790342081
+author = "teagar"
+license = "MIT"
+icon = "layout-dashboard"
+description = "Shows proportional maps of the active Niri workspaces and their windows in the bar."
+deprecated = false
+plugin_api = 17
+tags = ["bar", "indicator", "niri", "productivity", "system"]
