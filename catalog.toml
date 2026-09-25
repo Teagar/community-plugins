@@ -3047,3 +3047,16 @@ icon = "music"
 description = "Top-center now-playing island with artwork, transport controls, and automatic track-change previews."
 plugin_api = 24
 tags = ["bar", "media", "panel", "service"]
+
+[[plugin]]
+id = "notoxus/vietnamese-lunar-calendar"
+name = "Vietnamese Lunar Calendar"
+version = "1.0.0"
+updated_at = 1790341835
+added_at = 1790341835
+author = "notoxus"
+license = "MIT"
+icon = "moon-stars"
+description = "Vietnamese lunar calendar with lunar dates, Can Chi and traditional festivals."
+plugin_api = 22
+tags = ["panel", "shortcut", "bar", "time", "utility"]
