@@ -2973,15 +2973,15 @@ tags = ["time", "clock", "utility"]
 [[plugin]]
 id = "remo/noctes"
 name = "Noctes"
-version = "0.19.1"
-updated_at = 1790201102
+version = "0.20.0"
+updated_at = 1790295549
 added_at = 1790168059
 author = "remo"
 license = "MIT"
 icon = "note"
 description = "Configurable stickers for your desktop: one widget per note, theme-aware paper, plain-text storage."
 plugin_api = 26
-tags = ["desktop", "panel", "bar", "service", "productivity", "utility"]
+tags = ["productivity", "utility"]
 
 [[plugin]]
 id = "cmoro-deusto/nan-usage"
