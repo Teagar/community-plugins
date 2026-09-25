@@ -3021,3 +3021,16 @@ icon = "keyboard"
 description = "Keymap overlay for Vial split keyboards (Aurora Corne): all layers, mod/layer-taps, combos, from a .vil export."
 plugin_api = 24
 tags = ["panel", "bar", "hardware", "utility", "hyprland"]
+
+[[plugin]]
+id = "detluck/razer"
+name = "Razer Devices"
+version = "1.0.0"
+updated_at = 1790294970
+added_at = 1790294970
+author = "detluck"
+license = "MIT"
+icon = "mouse-2"
+description = "Razer device monitor, battery level indicator, and lighting controller via OpenRazer."
+plugin_api = 9
+tags = ["hardware", "gaming", "theming", "system", "bar", "panel", "service"]
