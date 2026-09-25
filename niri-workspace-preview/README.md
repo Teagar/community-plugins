@@ -130,7 +130,13 @@ matches or the miniature is too small.
 
 **No network or persistent data.** The plugin makes no network requests. Exact
 floating mode writes tiny generated SVGs under `XDG_RUNTIME_DIR` so the bar can
-render overlapping coordinates; they are removed when the widget exits.
+render overlapping coordinates; they are removed when the widget exits. To
+resolve Noctalia theme-role names such as `primary` and `outline` into the hex
+colors required by those SVGs, the widget reads
+`$XDG_CONFIG_HOME/noctalia/config.toml` (or
+`~/.config/noctalia/config.toml`). It uses only matching theme-color
+assignments and ignores all other settings; this preserves compatibility with
+plugin API 17, before `noctalia.getColor()` became available.
 
 **Scrolling and floating layouts.** Niri exposes every tiled window's column,
 row and tile size, but optional viewport coordinates are not guaranteed. The
