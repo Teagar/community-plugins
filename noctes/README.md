@@ -6,6 +6,10 @@ top, in a colour drawn from your Noctalia palette - sitting above the wallpaper
 and below every window. Writing happens in a small panel that opens when you
 click a sheet.
 
+Noctes is developed at [RamonRemo/noctes](https://github.com/RamonRemo/noctes).
+Suggestions and bug reports are welcome in its
+[issues](https://github.com/RamonRemo/noctes/issues).
+
 ## Plugin
 
 | Field | Value |
@@ -49,6 +53,11 @@ body, colour chips, and a toolbar with
 - **gear** - this plugin's settings
 - **bin** - deletes the note and takes its sheet off the desktop
 
+Deleting a sheet in Noctalia's widget editor deletes its note too, the next time
+the service reads `settings.toml`. A sheet this machine never had, and every
+known sheet vanishing at once (a reset settings file), are never taken for a
+deletion.
+
 The bar widget shows the note count and opens the panel. To open the panel from
 a keybind:
 
@@ -88,30 +97,32 @@ Per sheet, in the widget's own settings:
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | `string` | *(empty)* | Which note this sheet shows. Generated; set it only to point a sheet at a particular note. |
-| `color` | `select` | `auto` | Overrides the note's colour for this sheet. |
-| `fold` | `select` | `none` | Dog-ears a bottom corner. Off by default: a diagonal can only be drawn as a staircase here, and it shows. |
-| `tape` | `select` | `auto` | Whether a strip of tape is drawn, and where. `auto` decides from the key. |
+| `key` | `string` | *(empty)* | Which note this sheet shows. Generated, and hidden from the widget editor. |
 | `paper_width` | `int` | `220` | Paper width in px. |
 | `paper_height` | `int` | `200` | Paper height in px. |
 | `font_size` | `int` | `16` | Body size in pt; the title is three larger. A handwriting font needs more than a UI font. |
-| `max_lines` | `int` | `14` | Body lines before the text is elided. |
-| `show_title` | `bool` | `true` | Draw the note title above the body. |
-| `opacity_override` | `double` | `0.0` | Opacity for this sheet alone; `0` follows the plugin-wide value. |
-| `shadow` | `bool` | `true` | Draw the drop shadow. |
-| `use_theme_colors` | `select` | `inherit` | Force theme colours on or off for this sheet. |
 | `font_path` | `string` | `PatrickHand-Regular.ttf` | Font the note is drawn in. Plugin-relative, absolute or `~`; empty uses the shell font. |
+
+A sheet holds only what belongs to the paper. The colour belongs to the note and
+is picked in the panel; opacity and theme following are plugin-wide. Text longer
+than the paper is cut to the lines that fit and ends in "...".
 
 ## IPC
 
 ```sh
 noctalia msg plugin remo/noctes:service all desk            # note and sheet together
-noctalia msg plugin remo/noctes:service all new "buy milk"  # note only
+noctalia msg plugin remo/noctes:service all new "buy milk"  # note and sheet, with that text
 noctalia msg plugin remo/noctes:service all open work       # select the note keyed "work",
                                                             # creating it if absent
 noctalia msg plugin remo/noctes:service all move            # toggle the widget editor
+noctalia msg plugin remo/noctes:service all stick work      # give the note keyed "work" a sheet
+noctalia msg plugin remo/noctes:service all gather          # bring sheets off a disconnected output
 noctalia msg plugin remo/noctes:service all reload          # re-read notes.json
 ```
+
+`stick` is for a note that has a key but no sheet on this machine, such as one
+from a synced `notes.json`. `gather` also runs by itself whenever an output
+comes or goes; see **Notes**.
 
 `desk`, `new` and `open` all select what they touch, so pairing one with
 `noctalia msg panel-toggle remo/noctes:panel` gives a single-keybind quick note.
@@ -119,21 +130,36 @@ noctalia msg plugin remo/noctes:service all reload          # re-read notes.json
 ## Notes
 
 **Files written.** `notes.json` in `save_path`, or in the plugin's data
-directory when that is empty, plus a one-line `tilt.state` beside it. Writes are
-debounced onto a two second tick.
+directory when that is empty, written through `notes.json.tmp` and a rename so a
+crash cannot leave half a file. Writes are debounced onto a two second tick. A
+`notes.json` that does not parse is renamed to `notes.json.unreadable-<time>`
+and reported, never written over. The plugin's data directory also holds
+`tilt.state`, `sheets.json` (the sheets this machine has seen) and `homes.json`
+(where `gather` moved sheets from).
 
 **Noctalia's `settings.toml`.** A desktop widget's `rotation`, its background
 panel and the widget entry itself are host state, and no plugin call reaches
 them - so a plugin that creates its own sheets, tilts them or takes them down
-has to edit that file. `tools/noctes-widget` does, and every write backs the
-file up first, runs `noctalia config validate`, and restores the backup if
-validation fails. It touches only `desktop_widgets` entries whose `type` is
+has to edit that file. `tools/noctes-widget` does. Each change is written beside
+it as `settings.toml.noctes-new`, checked with `noctalia config validate`, and
+renamed into place only if it passes, so the shell never loads a file it would
+reject. Commands hold a lock on the settings directory, so two at once cannot
+undo each other. It touches only `desktop_widgets` entries whose `type` is
 `remo/noctes:note`, and the plugin's own `plugin_settings` block is read, never
 written.
 
-**Process spawned.** `python3 tools/noctes-widget`, for the above, and
-`noctalia msg desktop-widgets-toggle-edit` for the toolbar's move button.
-Nothing else.
+Once per start the helper also cleans up after older versions: it removes
+settings on noctes' own sheets that `noctalia config validate` reports as
+unknown, and deletes the `settings.toml.bak-noctes` and
+`settings.toml.bak-noctes-<date>` backups that 0.19 and earlier left beside the
+file. Nothing else beside `settings.toml` is touched.
+
+**Monitors.** A sheet on an output that is no longer connected is drawn nowhere,
+so it is moved to a connected one, and goes back when its own output returns.
+
+**Process spawned.** `python3 tools/noctes-widget`, for the above (it runs
+`noctalia config validate` itself), and `noctalia msg desktop-widgets-toggle-edit`
+for the toolbar's move button. Nothing else.
 
 **No network access.** Nothing is fetched or sent.
 
