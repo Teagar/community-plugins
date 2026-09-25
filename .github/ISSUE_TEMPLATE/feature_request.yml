@@ -140,6 +140,7 @@ body:
         - niri-displays
         - niri-ribbon
         - niri-rules-studio
+        - niri-workspace-preview
         - nix-monitor
         - nix-search
         - nix-status
