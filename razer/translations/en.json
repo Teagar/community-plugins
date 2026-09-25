@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "sync_theme_color": {
+      "label": "Sync RGB with Theme",
+      "description": "Automatically match Razer LED colors to Noctalia's active accent color"
+    },
+    "low_battery_threshold": {
+      "label": "Low Battery Warning (%)",
+      "description": "Battery percentage threshold to trigger warning notification"
+    },
+    "show_percentage": {
+      "label": "Show Battery Percentage",
+      "description": "Display percentage number next to device icon in the bar"
+    }
+  },
+  "ui": {
+    "panel_title": "Razer Control Center",
+    "daemon_not_running": "OpenRazer Daemon Not Running",
+    "start_daemon": "Start Daemon",
+    "start_daemon_hint": "Start the daemon with:\nsystemctl --user start openrazer-daemon",
+    "no_devices": "No Razer Devices Found",
+    "no_devices_hint": "Connect a supported Razer mouse, keyboard, or headset via USB / 2.4GHz dongle.",
+    "refresh": "Refresh",
+    "wired": "Wired",
+    "sensitivity": "Sensitivity (DPI)",
+    "custom_dpi_placeholder": "Custom DPI (e.g. 1500)",
+    "set": "Set",
+    "brightness": "LED Brightness",
+    "lighting_effect": "Lighting Effect",
+    "theme_sync": "Theme Sync",
+    "razer_green": "Razer Green",
+    "spectrum": "Spectrum",
+    "off": "Off",
+    "picker": "Picker",
+    "custom_color_placeholder": "Hex color (e.g. #FF0055)"
+  }
+}
