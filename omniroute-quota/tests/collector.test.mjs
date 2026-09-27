@@ -1,7 +1,14 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { parseUsageResponse } from "../scripts/get-omniroute-quota.mjs"
+import {
+  deduplicateOpenCodeCredentials,
+  parseUsageResponse,
+} from "../scripts/get-omniroute-quota.mjs"
+
+function jwt(payload) {
+  return `x.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.x`
+}
 
 test("normalizes Codex 5-hour and weekly windows", () => {
   const result = parseUsageResponse({
@@ -30,4 +37,44 @@ test("clamps malformed percentages", () => {
   })
 
   assert.deepEqual(result.windows.map((window) => window.remainingPercent), [0, 100])
+})
+
+test("deduplicates OpenCode credentials by account and keeps the newest generation", () => {
+  const accountClaim = "https://api.openai.com/auth"
+  const rows = [
+    {
+      label: "old alias",
+      active: 0,
+      time_updated: 10,
+      value: JSON.stringify({
+        type: "oauth",
+        access: jwt({ email: "one@example.com", iat: 100, exp: 200, [accountClaim]: { chatgpt_account_id: "account-1" } }),
+        refresh: "old",
+      }),
+    },
+    {
+      label: "one@example.com",
+      active: 1,
+      time_updated: 20,
+      value: JSON.stringify({
+        type: "oauth",
+        access: jwt({ email: "one@example.com", iat: 150, exp: 250, [accountClaim]: { chatgpt_account_id: "account-1" } }),
+        refresh: "new",
+      }),
+    },
+    {
+      label: "two@example.com",
+      active: 0,
+      value: {
+        type: "oauth",
+        access: jwt({ email: "two@example.com", iat: 120, exp: 220, [accountClaim]: { chatgpt_account_id: "account-2" } }),
+      },
+    },
+    { label: "broken", value: "not JSON" },
+  ]
+
+  const credentials = deduplicateOpenCodeCredentials(rows)
+  assert.equal(credentials.length, 2)
+  assert.equal(credentials.find((item) => item.accountId === "account-1").refresh, "new")
+  assert.equal(credentials.find((item) => item.accountId === "account-1").selected, true)
 })

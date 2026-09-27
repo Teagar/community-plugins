@@ -1,8 +1,9 @@
 # OmniRoute Quota
 
-Monitor every Codex account configured in a local OmniRoute installation from
-the Noctalia bar. The panel shows the live 5-hour and weekly quota windows,
-their reset countdowns, account status, and local seven-day usage.
+Monitor every OpenAI/Codex account connected to OpenCode or configured in a
+local OmniRoute installation from the Noctalia bar. The panel shows the live
+5-hour and weekly quota windows, their reset countdowns, account status, and
+local seven-day usage.
 
 ## Plugin
 
@@ -17,6 +18,9 @@ their reset countdowns, account status, and local seven-day usage.
   module available.
 - Install and configure OmniRoute locally with at least one Codex account. The
   collector reads `~/.omniroute/storage.sqlite` and OmniRoute's local `.env`.
+- OpenCode V2 accounts are discovered automatically from its read-only
+  `opencode.db` credential store. The legacy `auth.json` is used only when the
+  V2 multi-account table is unavailable.
 
 ## Usage
 
@@ -31,8 +35,11 @@ the lowest remaining quota across active Codex accounts. Its colour changes to
 
 The panel displays each account's plan, active state, 5-hour and weekly quota
 bars, exact reset countdowns, and successful request/token totals recorded by
-OmniRoute during the last seven days. Opening the panel requests fresh values;
-the refresh button in its header does the same.
+OmniRoute during the last seven days. OpenCode credentials are matched to
+OmniRoute connections by the stable OpenAI account ID, with normalized email as
+a fallback. Accounts connected only to OpenCode are appended automatically.
+Opening the panel requests fresh values; the refresh button in its header does
+the same.
 
 To open the panel from a terminal:
 
@@ -61,8 +68,12 @@ noctalia msg plugin teagar/omniroute-quota:service all refresh
 - The service spawns one `node scripts/get-omniroute-quota.mjs` process per
   refresh. Widgets and panels subscribe to its shared state and do not spawn
   additional collectors.
-- The collector opens OmniRoute's SQLite database in read-only mode and reads
-  `STORAGE_ENCRYPTION_KEY` from OmniRoute's local `.env` only when needed.
+- The collector opens the OmniRoute and OpenCode SQLite databases in read-only
+  mode and reads `STORAGE_ENCRYPTION_KEY` from OmniRoute's local `.env` only
+  when needed.
+- Multiple OpenCode labels for the same OpenAI account are deduplicated by
+  account ID; the newest OAuth generation wins. A matching OpenCode credential
+  is preferred for the live quota request, while OmniRoute remains the fallback.
 - Access tokens are decrypted only in the collector process memory. They are
   never published to Luau state, printed, written, or exposed in the UI.
 - Each active account causes one HTTPS request to OpenAI's official Codex usage
