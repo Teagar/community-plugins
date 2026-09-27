@@ -281,6 +281,44 @@ async function fetchAccount(row, encryptionKey, db) {
   }
 }
 
+function normalizedAccountName(account) {
+  return String(account.name || "").trim().toLowerCase()
+}
+
+function availability(account) {
+  const remaining = (account.windows || [])
+    .map((window) => Number(window.remainingPercent))
+    .filter(Number.isFinite)
+  const hasQuota = !account.error && remaining.length > 0
+  const usable = account.active !== false && hasQuota && remaining.every((value) => value > 0)
+  return {
+    tier: usable ? 3 : account.active !== false && hasQuota ? 2 : hasQuota ? 1 : 0,
+    remaining: remaining.length > 0 ? Math.min(...remaining) : -1,
+  }
+}
+
+export function sortAccounts(accounts, order = "availability") {
+  const sorted = [...(accounts || [])]
+  sorted.sort((left, right) => {
+    const leftName = normalizedAccountName(left)
+    const rightName = normalizedAccountName(right)
+    if (order !== "alphabetical") {
+      const leftAvailability = availability(left)
+      const rightAvailability = availability(right)
+      if (leftAvailability.tier !== rightAvailability.tier) {
+        return rightAvailability.tier - leftAvailability.tier
+      }
+      if (leftAvailability.remaining !== rightAvailability.remaining) {
+        return rightAvailability.remaining - leftAvailability.remaining
+      }
+    }
+    if (leftName < rightName) return -1
+    if (leftName > rightName) return 1
+    return 0
+  })
+  return sorted
+}
+
 export async function collect(options = {}) {
   const home = options.home || os.homedir()
   const config = readConfiguration(home)
@@ -335,16 +373,17 @@ export async function collect(options = {}) {
       accounts.push(await fetchAccount(row, config.encryptionKey, db))
     }
 
-    const remaining = accounts.flatMap((account) =>
+    const sortedAccounts = sortAccounts(accounts, options.sortOrder)
+    const remaining = sortedAccounts.flatMap((account) =>
       account.windows.map((window) => window.remainingPercent)
     )
     return {
       ok: true,
       updatedAt: new Date().toISOString(),
-      accounts,
+      accounts: sortedAccounts,
       summary: {
-        accountCount: accounts.length,
-        availableCount: accounts.filter((account) => account.windows.length > 0).length,
+        accountCount: sortedAccounts.length,
+        availableCount: sortedAccounts.filter((account) => account.windows.length > 0).length,
         openCodeAccountCount: openCodeCredentials.length,
         worstRemainingPercent: remaining.length > 0 ? Math.min(...remaining) : null,
       },
@@ -356,8 +395,12 @@ export async function collect(options = {}) {
 
 async function main() {
   const showInactive = process.argv.includes("--show-inactive")
+  const sortIndex = process.argv.indexOf("--sort")
+  const sortOrder = sortIndex >= 0 && process.argv[sortIndex + 1] === "alphabetical"
+    ? "alphabetical"
+    : "availability"
   try {
-    console.log(JSON.stringify(await collect({ showInactive })))
+    console.log(JSON.stringify(await collect({ showInactive, sortOrder })))
   } catch (error) {
     console.log(JSON.stringify({
       ok: false,

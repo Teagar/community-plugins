@@ -32,6 +32,17 @@ default = true
 label_key = "settings.show_value.label"
 description_key = "settings.show_value.description"
 
+[[setting]]
+key = "sort_order"
+type = "select"
+default = "availability"
+label_key = "settings.sort_order.label"
+description_key = "settings.sort_order.description"
+options = [
+  { value = "availability", label_key = "settings.sort_order.option.availability" },
+  { value = "alphabetical", label_key = "settings.sort_order.option.alphabetical" },
+]
+
 [[service]]
 id = "service"
 entry = "service.luau"

@@ -26,6 +26,14 @@
       "description": "Also query Codex connections disabled in OmniRoute.",
       "label": "Include inactive accounts"
     },
+    "sort_order": {
+      "description": "Order accounts by usable quota or by name.",
+      "label": "Account order",
+      "option": {
+        "alphabetical": "Alphabetical",
+        "availability": "Available first"
+      }
+    },
     "show_value": {
       "description": "Display the lowest remaining quota percentage.",
       "label": "Show value in bar"

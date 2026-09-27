@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   deduplicateOpenCodeCredentials,
   parseUsageResponse,
+  sortAccounts,
 } from "../scripts/get-omniroute-quota.mjs"
 
 function jwt(payload) {
@@ -77,4 +78,29 @@ test("deduplicates OpenCode credentials by account and keeps the newest generati
   assert.equal(credentials.length, 2)
   assert.equal(credentials.find((item) => item.accountId === "account-1").refresh, "new")
   assert.equal(credentials.find((item) => item.accountId === "account-1").selected, true)
+})
+
+test("sorts usable accounts by their most restrictive remaining quota", () => {
+  const accounts = [
+    { name: "error", active: true, windows: [], error: "HTTP 401" },
+    { name: "exhausted", active: true, windows: [{ remainingPercent: 0 }], error: null },
+    { name: "lower", active: true, windows: [{ remainingPercent: 40 }, { remainingPercent: 20 }], error: null },
+    { name: "higher", active: true, windows: [{ remainingPercent: 70 }, { remainingPercent: 60 }], error: null },
+    { name: "inactive", active: false, windows: [{ remainingPercent: 90 }], error: null },
+  ]
+
+  assert.deepEqual(sortAccounts(accounts).map((account) => account.name), [
+    "higher", "lower", "exhausted", "inactive", "error",
+  ])
+})
+
+test("sorts account names alphabetically when configured", () => {
+  const accounts = [
+    { name: "Zulu", windows: [], error: "HTTP 401" },
+    { name: "alpha", windows: [{ remainingPercent: 90 }], error: null },
+    { name: "Bravo", windows: [{ remainingPercent: 10 }], error: null },
+  ]
+  assert.deepEqual(sortAccounts(accounts, "alphabetical").map((account) => account.name), [
+    "alpha", "Bravo", "Zulu",
+  ])
 })
