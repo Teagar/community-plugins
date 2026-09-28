@@ -50,6 +50,17 @@
       "description": "Fallback color for windows without a higher-priority state.",
       "label": "Normal window color"
     },
+    "output_names": {
+      "description": "Comma-separated output names to show, for example: eDP-1, HDMI-A-1.",
+      "label": "Selected outputs"
+    },
+    "output_scope": {
+      "all": "All outputs",
+      "current": "This bar's output",
+      "custom": "Selected outputs",
+      "description": "Show every active output, only the monitor containing this bar, or a named selection.",
+      "label": "Output scope"
+    },
     "output_gap": {
       "description": "Space between output previews in logical pixels.",
       "label": "Output gap"
